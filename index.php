@@ -20,11 +20,11 @@ if (isset($_SESSION['user_id'])) {
 
     while ($row = $result->fetch_assoc()) {
         $events[] = [
-            'id' => $row['sondmus_id'],
-            'title' => $row['pealkiri'],
-            'description' => $row['kirjeldus'],
-            'start' => $row['algus_aeg'],
-            'end' => $row['lopp_aeg']
+            'id' => htmlspecialchars($row['sondmus_id']),
+            'title' => htmlspecialchars($row['pealkiri']),
+            'description' => htmlspecialchars($row['kirjeldus']),
+            'start' => htmlspecialchars($row['algus_aeg']),
+            'end' => htmlspecialchars($row['lopp_aeg'])
         ];
     }
 
@@ -36,7 +36,7 @@ if (isset($_SESSION['user_id'])) {
     $reminder_result = $reminder_stmt->get_result();
 
     while ($reminder = $reminder_result->fetch_assoc()) {
-        $reminders[] = $reminder['meeldetuletuse_aeg'];
+        $reminders[] = htmlspecialchars($reminder['meeldetuletuse_aeg']);
     }
 }
 $conn->close();
@@ -64,71 +64,69 @@ $conn->close();
         </div>
 
         <!-- Календарь -->
-        <div id='calendar' class="p-4  rounded"></div>
+        <div id='calendar' class="p-4 rounded"></div>
 
         <!-- Модальное окно для деталей события -->
-        <!-- Модальное окно для отображения деталей события -->
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="eventModalLabel">Sündmuse detailid</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p><strong>Pealkiri: </strong> <span id="eventTitle"></span></p>
-                <p><strong>Kirjeldus: </strong><span id="eventDescription"></span></p>
-                <p><strong>Algusaeg: </strong> <span id="eventStart"></span></p>
-                <p><strong>Lõpuaeg: </strong> <span id="eventEnd"></span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sulge</button>
+        <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="eventModalLabel">Sündmuse detailid</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Pealkiri: </strong> <span id="eventTitle"></span></p>
+                        <p><strong>Kirjeldus: </strong><span id="eventDescription"></span></p>
+                        <p><strong>Algusaeg: </strong> <span id="eventStart"></span></p>
+                        <p><strong>Lõpuaeg: </strong> <span id="eventEnd"></span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sulge</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-    </div>
 
     <script>
-     document.addEventListener('DOMContentLoaded', function () {
-    var calendarEl = document.getElementById('calendar');
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
 
-    // Функция для генерации случайного темного цвета
-    function getRandomDarkColor() {
-        var letters = '012345';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * letters.length)];
-        }
-        return color;
-    }
+            // Функция для генерации случайного темного цвета
+            function getRandomDarkColor() {
+                var letters = '012345';
+                var color = '#';
+                for (var i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * letters.length)];
+                }
+                return color;
+            }
 
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        events: <?php echo json_encode($events); ?>,
-        eventDidMount: function (info) {
-            // Присваиваем случайный темный цвет каждому событию
-            var randomColor = getRandomDarkColor();
-            info.el.style.backgroundColor = randomColor;
-            info.el.style.borderColor = randomColor;
-        },
-        eventClick: function (info) {
-            $('#eventTitle').text(info.event.title);
-            $('#eventDescription').text(info.event.extendedProps.description);
-            $('#eventStart').text(new Date(info.event.start).toLocaleString());
-            $('#eventEnd').text(new Date(info.event.end).toLocaleString());
-            $('#eventModal').modal('show');
-        }
-    });
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: <?php echo json_encode($events, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                eventDidMount: function (info) {
+                    // Присваиваем случайный темный цвет каждому событию
+                    var randomColor = getRandomDarkColor();
+                    info.el.style.backgroundColor = randomColor;
+                    info.el.style.borderColor = randomColor;
+                },
+                eventClick: function (info) {
+                    $('#eventTitle').text(info.event.title);
+                    $('#eventDescription').text(info.event.extendedProps.description);
+                    $('#eventStart').text(new Date(info.event.start).toLocaleString());
+                    $('#eventEnd').text(new Date(info.event.end).toLocaleString());
+                    $('#eventModal').modal('show');
+                }
+            });
 
-    calendar.render();
-});
+            calendar.render();
+        });
     </script>
 
     <!-- Bootstrap JS -->
@@ -139,4 +137,3 @@ $conn->close();
 
 </body>
 </html>
-

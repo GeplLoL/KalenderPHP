@@ -1,8 +1,8 @@
 <?php
 session_start();
-ob_start(); // Start output bufferin
+ob_start(); // Start output buffering
 require_once 'db_connect.php';
-require_once 'includes/nav.php'; 
+require_once 'includes/nav.php';
 global $conn;
 
 // Check if user is logged in
@@ -15,37 +15,34 @@ $user_id = $_SESSION['user_id'];
 
 // Handle delete event request
 if (isset($_GET['delete'])) {
-    $event_id = $_GET['delete'];
-    $delete_sql = "DELETE FROM sondmused WHERE sondmus_id = ?";
+    $event_id = intval($_GET['delete']); // Преобразуем в int для защиты от инъекций
+    $delete_sql = "DELETE FROM sondmused WHERE sondmus_id = ? AND kasutaja_id = ?";
     $delete_stmt = $conn->prepare($delete_sql);
-    $delete_stmt->bind_param("i", $event_id);
+    $delete_stmt->bind_param("ii", $event_id, $user_id); // Проверка user_id для удаления только своих событий
     $delete_stmt->execute();
 
     header("Location: manage_events.php");
     exit();
-
-
 }
 
 // Handle update event request
 if (isset($_POST['update_event'])) {
-    $event_id = $_POST['event_id'];
-    $title = $_POST['title'];
-    $description = $_POST['description'];
+    $event_id = intval($_POST['event_id']);
+    $title = htmlspecialchars($_POST['title'], ENT_QUOTES, 'UTF-8');
+    $description = htmlspecialchars($_POST['description'], ENT_QUOTES, 'UTF-8');
     $start_time = $_POST['start_time'];
     $end_time = $_POST['end_time'];
 
-    $update_sql = "UPDATE `sondmused` SET pealkiri = ?, kirjeldus = ?, algus_aeg = ?, lopp_aeg = ? WHERE sondmus_id = ?";
+    $update_sql = "UPDATE `sondmused` SET pealkiri = ?, kirjeldus = ?, algus_aeg = ?, lopp_aeg = ? WHERE sondmus_id = ? AND kasutaja_id = ?";
     $update_stmt = $conn->prepare($update_sql);
-    $update_stmt->bind_param("ssssi", $title, $description, $start_time, $end_time, $event_id);
+    $update_stmt->bind_param("ssssii", $title, $description, $start_time, $end_time, $event_id, $user_id);
     $update_stmt->execute();
-
 }
 
 // Handle add event request
 if (isset($_POST['add_event'])) {
-    $title = $_POST['title'];
-    $description = $_POST['description'];
+    $title = htmlspecialchars($_POST['title'], ENT_QUOTES, 'UTF-8');
+    $description = htmlspecialchars($_POST['description'], ENT_QUOTES, 'UTF-8');
     $start_time = $_POST['start_time'];
     $end_time = $_POST['end_time'];
 
@@ -53,7 +50,6 @@ if (isset($_POST['add_event'])) {
     $insert_stmt = $conn->prepare($insert_sql);
     $insert_stmt->bind_param("issss", $user_id, $title, $description, $start_time, $end_time);
     $insert_stmt->execute();
-
 }
 
 // Fetch events for logged-in user
@@ -85,7 +81,7 @@ $conn->close();
 
         <!-- Form to add new event -->
         <div class="card mb-4">
-            <div class="card-header bg-hex-" #0B192C" text-white">
+            <div class="card-header bg-dark text-white">
                 Lisa uus sündmus
             </div>
             <div class="card-body">
@@ -133,27 +129,26 @@ $conn->close();
                         <tr>
                             <form method="post" action="manage_events.php">
                                 <td>
-                                    <input type="hidden" name="event_id" value="<?php echo $event['sondmus_id']; ?>">
+                                    <input type="hidden" name="event_id" value="<?php echo htmlspecialchars($event['sondmus_id']); ?>">
                                     <input type="text" name="title" value="<?php echo htmlspecialchars($event['pealkiri']); ?>"
                                         class="form-control" required>
                                 </td>
                                 <td>
-                                    <textarea name="description" class="form-control"
-                                        required><?php echo htmlspecialchars($event['kirjeldus']); ?></textarea>
+                                    <textarea name="description" class="form-control" required><?php echo htmlspecialchars($event['kirjeldus']); ?></textarea>
                                 </td>
                                 <td>
                                     <input type="datetime-local" name="start_time"
-                                        value="<?php echo date('Y-m-d\TH:i', strtotime($event['algus_aeg'])); ?>"
+                                        value="<?php echo htmlspecialchars(date('Y-m-d\TH:i', strtotime($event['algus_aeg']))); ?>"
                                         class="form-control" required>
                                 </td>
                                 <td>
                                     <input type="datetime-local" name="end_time"
-                                        value="<?php echo date('Y-m-d\TH:i', strtotime($event['lopp_aeg'])); ?>"
+                                        value="<?php echo htmlspecialchars(date('Y-m-d\TH:i', strtotime($event['lopp_aeg']))); ?>"
                                         class="form-control" required>
                                 </td>
                                 <td>
                                     <button type="submit" name="update_event" class="btn btn-warning mb-2 fixed-size">Muuda</button>
-                                    <a href="manage_events.php?delete=<?php echo $event['sondmus_id']; ?>"
+                                    <a href="manage_events.php?delete=<?php echo htmlspecialchars($event['sondmus_id']); ?>"
                                         class="btn btn-danger fixed-size"
                                         onclick="return confirm('Kas olete kindel, et soovite kustutada sündmuse?');">Kustuta</a>
                                 </td>
@@ -168,11 +163,10 @@ $conn->close();
 
         <!-- Button to redirect back to events.php -->
         <div class="text-center mt-4">
-            <a href="index.php" class="btn btn-secondary">Tagasi sündмuste juurde</a>
+            <a href="../calendar" class="btn btn-secondary">Tagasi sündмuste juurde</a>
         </div>
     </div>
 <?php include 'includes/footer.html'; ?>
 
 </body>
-
 </html>
